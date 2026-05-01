@@ -1,0 +1,39 @@
+name: Live Test
+
+on:
+  workflow_dispatch:
+  # Daily cron is intentionally disabled to avoid burning login attempts
+  # on the upstream Ayla tenant. Re-enable only after the auth-rate
+  # situation has been characterized in production.
+  # schedule:
+  #   - cron: '0 0 * * *'  # Runs daily at midnight
+
+jobs:
+  live-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[tests]
+
+      - name: Run live tests
+        env:
+          NAPOLEON_EMAIL: ${{ secrets.NAPOLEON_EMAIL }}
+          NAPOLEON_PASSWORD: ${{ secrets.NAPOLEON_PASSWORD }}
+          # NAPOLEON_DSN is optional — if not set, the live test
+          # auto-discovers and uses the only fireplace on the account.
+          NAPOLEON_DSN: ${{ secrets.NAPOLEON_DSN }}
+          NAPOLEON_APP_ID: ${{ secrets.NAPOLEON_APP_ID }}
+          NAPOLEON_APP_SECRET: ${{ secrets.NAPOLEON_APP_SECRET }}
+
+        run: |
+          pytest -s -m live

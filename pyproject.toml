@@ -1,0 +1,61 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pynapoleon"
+version = "0.0.1"
+description = "Python library for Napoleon Astound-series fireplaces (Ayla IoT platform)"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+  { name = "Stefan Slivinski", email = "sslivins@gmail.com" }
+]
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Home Automation"
+]
+# Runtime dependencies
+dependencies = [
+    "ayla-iot-unofficial>=1.5.0,<2",
+    "aiohttp>=3.11.12"
+]
+
+[project.optional-dependencies]
+tests = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
+    "aioresponses>=0.7.8",
+    "python-dotenv>=1.0.1",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.6.0",
+    "mypy>=1.10.0"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/sslivins/pynapoleon"
+"Bug Tracker" = "https://github.com/sslivins/pynapoleon/issues"
+
+[project.scripts]
+pynapoleon = "pynapoleon.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+strict_optional = true
+warn_unused_ignores = true
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = ["ayla_iot_unofficial", "ayla_iot_unofficial.*"]
+ignore_missing_imports = true
