@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
+from aiohttp.client import _BaseRequestContextManager
 from ayla_iot_unofficial import AylaApi
 from ayla_iot_unofficial.exc import (
     AylaAuthError,
@@ -99,7 +100,7 @@ class NapoleonClient:
         """
         ayla = self.ayla_api
         try:
-            return await ayla.async_request(method, url, **kwargs)
+            return await self._do_ayla_request(ayla, method, url, **kwargs)
         except (AylaAuthExpiringError, AylaNotAuthedError):
             try:
                 await ayla.async_refresh_auth()
@@ -108,7 +109,7 @@ class NapoleonClient:
                     f"token refresh failed: {exc}"
                 ) from exc
             try:
-                return await ayla.async_request(method, url, **kwargs)
+                return await self._do_ayla_request(ayla, method, url, **kwargs)
             except (AylaAuthExpiringError, AylaNotAuthedError) as exc:
                 raise NapoleonAuthError(
                     f"still unauthenticated after refresh: {exc}"
@@ -117,6 +118,28 @@ class NapoleonClient:
             raise NapoleonConnectionError(
                 f"{method.upper()} {url} failed: {exc}"
             ) from exc
+
+    @staticmethod
+    async def _do_ayla_request(
+        ayla: Any, method: str, url: str, **kwargs: Any
+    ) -> aiohttp.ClientResponse:
+        """Invoke ``ayla.async_request`` and resolve its result to a response.
+
+        ``ayla-iot-unofficial.AylaApi.async_request`` is ``async def`` but
+        returns ``session.request(...)`` *without* awaiting it, so awaiting
+        the coroutine yields an :class:`aiohttp._RequestContextManager`,
+        not a :class:`aiohttp.ClientResponse`. We await that context manager
+        a second time to actually fire the HTTP request and obtain the
+        response — which is what callers expect.
+        """
+        cm = await ayla.async_request(method, url, **kwargs)
+        # ayla-iot-unofficial returns the unawaited request context manager
+        # (aiohttp._RequestContextManager). Awaiting it fires the request and
+        # yields the ClientResponse. Detect that specific type and unwrap it
+        # so callers get a real response.
+        if isinstance(cm, _BaseRequestContextManager):
+            return await cm
+        return cm
 
     async def fireplaces(self) -> list[Fireplace]:
         """Return all Napoleon fireplaces visible to this account.

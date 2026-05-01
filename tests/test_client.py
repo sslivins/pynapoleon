@@ -182,8 +182,35 @@ def test_ayla_api_property_requires_login():
         _ = client.ayla_api
 
 
-@pytest.mark.unit
-async def test_fireplaces_filters_non_napoleon_devices():
+@pytest.mark.auth
+async def test_ayla_request_unwraps_request_context_manager():
+    """Regression: ayla-iot-unofficial's ``async_request`` is ``async def``
+    that returns ``session.request(...)`` *without* awaiting it, so awaiting
+    the coroutine yields an aiohttp ``_RequestContextManager``. Our wrapper
+    must await that manager a second time so callers receive a real
+    ``ClientResponse`` (with ``.status``, ``.text()``, ``.release()`` etc.).
+    Bug surfaced as
+    ``'_BaseRequestContextManager' object has no attribute 'release'``.
+    """
+    from aiohttp.client import _RequestContextManager
+
+    expected = MagicMock(name="ClientResponse")
+
+    async def _fake_request_coro():
+        return expected
+
+    cm = _RequestContextManager(_fake_request_coro())
+    fake_ayla = AsyncMock()
+    fake_ayla.async_request = AsyncMock(return_value=cm)
+    client = NapoleonClient("e", "p")
+    client._ayla = fake_ayla
+
+    result = await client.ayla_request("get", "https://example/api")
+
+    assert result is expected
+
+
+
     client = NapoleonClient("e", "p")
     fire = _make_ayla_device_stub(
         serial="AC_FIRE",
