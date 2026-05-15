@@ -84,6 +84,53 @@ async def test_set_setpoint_writes_celsius_minus_offset(fireplace_factory):
 
 
 @pytest.mark.set_params
+@pytest.mark.parametrize(
+    ("user_value", "wire_value"),
+    [(0, 5), (1, 4), (2, 3), (3, 2), (4, 1), (5, 0)],
+)
+async def test_set_orange_flame_inverts_wire_value(
+    fireplace_factory, user_value, wire_value
+):
+    """User passes the natural scale; pynapoleon writes the inverted wire value."""
+    fp, client, _ = fireplace_factory()
+    await fp.set_orange_flame(user_value)
+    args, kwargs = client.ayla_request.call_args
+    payload = kwargs["json"]
+    assert payload == {
+        "batch_datapoints": [
+            {
+                "datapoint": {"value": wire_value},
+                "dsn": "AC000W032261383",
+                "name": "orange_flame",
+            }
+        ]
+    }
+
+
+@pytest.mark.set_params
+@pytest.mark.parametrize(
+    ("user_value", "wire_value"),
+    [(0, 5), (1, 4), (2, 3), (3, 2), (4, 1), (5, 0)],
+)
+async def test_set_yellow_flame_inverts_wire_value(
+    fireplace_factory, user_value, wire_value
+):
+    fp, client, _ = fireplace_factory()
+    await fp.set_yellow_flame(user_value)
+    args, kwargs = client.ayla_request.call_args
+    payload = kwargs["json"]
+    assert payload == {
+        "batch_datapoints": [
+            {
+                "datapoint": {"value": wire_value},
+                "dsn": "AC000W032261383",
+                "name": "yellow_flame",
+            }
+        ]
+    }
+
+
+@pytest.mark.set_params
 @pytest.mark.parametrize("bad_rgb", [(-1, 0, 0), (0, 256, 0), (0, 0, 999)])
 async def test_set_ember_bed_rgb_rejects_out_of_range(fireplace_factory, bad_rgb):
     fp, _, _ = fireplace_factory()

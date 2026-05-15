@@ -15,8 +15,12 @@ async def test_refresh_decodes_full_property_snapshot(
 
     assert state.power is True
     assert state.flame_speed == 3
-    assert state.orange_flame == 2
-    assert state.yellow_flame == 4
+    # orange_flame and yellow_flame are stored on the wire on an inverted
+    # scale (wire 5 = off, wire 0 = max). pynapoleon presents them on the
+    # natural mobile-app scale (0 = off, 5 = max), so the fixture's wire
+    # values 2 and 4 surface as 3 and 1.
+    assert state.orange_flame == 3
+    assert state.yellow_flame == 1
     assert state.heater == 1
     assert state.setpoint_c == 23  # 5 + 18
     assert state.eco_mode is False
