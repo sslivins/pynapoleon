@@ -43,6 +43,24 @@ def decode_setpoint_c(raw: int) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Flame colour helpers
+# ---------------------------------------------------------------------------
+def _invert_flame_colour(value: int) -> int:
+    """Flip a flame-colour value between the user scale and the wire scale.
+
+    The ``orange_flame`` and ``yellow_flame`` Ayla datapoints are stored on an
+    inverted scale: a wire value of ``5`` means "off" and ``0`` means "max",
+    which is the opposite of what the Napoleon mobile app shows the user.
+    pynapoleon presents the app's natural scale (``0`` = off, ``5`` = max), so
+    every read and write flips the value through this helper. The inversion is
+    symmetric because the range is anchored at 0, so this function is its own
+    inverse.
+    """
+    _lo, hi = C.FLAME_COLOUR_RANGE
+    return hi - value
+
+
+# ---------------------------------------------------------------------------
 # Fireplace device
 # ---------------------------------------------------------------------------
 class Fireplace:
@@ -161,6 +179,13 @@ class Fireplace:
                 return None
             return (int(r), int(g), int(b))
 
+        def _flame_colour(v: Any) -> int | None:
+            """Read a flame-colour datapoint and present it on the natural scale.
+
+            See :func:`_invert_flame_colour` for the rationale.
+            """
+            return None if v is None else _invert_flame_colour(int(v))
+
         raw_setpoint = _get(C.PROP_SET_TEMPERATURE)
         setpoint_c = (
             decode_setpoint_c(int(raw_setpoint)) if raw_setpoint is not None else None
@@ -169,8 +194,8 @@ class Fireplace:
         return FireplaceState(
             power=_bool(_get(C.PROP_POWER)),
             flame_speed=_int(_get(C.PROP_FLAME_SPEED)),
-            orange_flame=_int(_get(C.PROP_ORANGE_FLAME)),
-            yellow_flame=_int(_get(C.PROP_YELLOW_FLAME)),
+            orange_flame=_flame_colour(_get(C.PROP_ORANGE_FLAME)),
+            yellow_flame=_flame_colour(_get(C.PROP_YELLOW_FLAME)),
             heater=_int(_get(C.PROP_HEATER)),
             setpoint_c=setpoint_c,
             eco_mode=_bool(_get(C.PROP_ECO_MODE)),
@@ -275,7 +300,7 @@ class Fireplace:
             raise NapoleonValueError(
                 f"orange_flame must be {lo}..{hi}, got {value}"
             )
-        await self._write_batch({C.PROP_ORANGE_FLAME: value})
+        await self._write_batch({C.PROP_ORANGE_FLAME: _invert_flame_colour(value)})
 
     async def set_yellow_flame(self, value: int) -> None:
         lo, hi = C.FLAME_COLOUR_RANGE
@@ -283,7 +308,7 @@ class Fireplace:
             raise NapoleonValueError(
                 f"yellow_flame must be {lo}..{hi}, got {value}"
             )
-        await self._write_batch({C.PROP_YELLOW_FLAME: value})
+        await self._write_batch({C.PROP_YELLOW_FLAME: _invert_flame_colour(value)})
 
     async def set_heater(self, value: int) -> None:
         if value not in C.HEATER_VALUES:
