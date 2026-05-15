@@ -15,10 +15,11 @@ async def test_refresh_decodes_full_property_snapshot(
 
     assert state.power is True
     assert state.flame_speed == 3
-    # orange_flame and yellow_flame are stored on the wire on an inverted
-    # scale (wire 5 = off, wire 0 = max). pynapoleon presents them on the
-    # natural mobile-app scale (0 = off, 5 = max), so the fixture's wire
-    # values 2 and 4 surface as 3 and 1.
+    # orange_flame and yellow_flame use Napoleon's inverted wire scale where
+    # wire 5 (and 0, defensively) mean off, and wire 1..4 map to display
+    # levels 4..1. pynapoleon presents these on the natural user scale
+    # (0 = off, 1..4 = levels from lowest to highest), so the fixture's wire
+    # values 2 and 4 surface as user 3 and user 1.
     assert state.orange_flame == 3
     assert state.yellow_flame == 1
     assert state.heater == 1
@@ -53,6 +54,22 @@ async def test_refresh_handles_partial_rgb_as_none(fireplace_factory):
     fp, _, _ = fireplace_factory(property_values=pv)
     state = await fp.refresh()
     assert state.ember_bed_rgb is None
+
+
+@pytest.mark.get_params
+@pytest.mark.parametrize(
+    ("wire", "expected_user"),
+    [(0, 0), (1, 4), (2, 3), (3, 2), (4, 1), (5, 0)],
+)
+async def test_flame_colour_wire_values_decode_to_user_scale(
+    fireplace_factory, wire, expected_user
+):
+    """wire 0 and wire 5 both fold to 'off'; 1..4 invert to user 4..1."""
+    pv = {"orange_flame": wire, "yellow_flame": wire}
+    fp, _, _ = fireplace_factory(property_values=pv)
+    state = await fp.refresh()
+    assert state.orange_flame == expected_user
+    assert state.yellow_flame == expected_user
 
 
 @pytest.mark.get_params
