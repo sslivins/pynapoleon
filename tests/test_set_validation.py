@@ -28,7 +28,7 @@ async def test_set_flame_speed_accepts_in_range(fireplace_factory, good):
 
 
 @pytest.mark.set_params
-@pytest.mark.parametrize("bad", [-1, 6])
+@pytest.mark.parametrize("bad", [-1, 5, 6, 99])
 async def test_set_orange_flame_rejects_out_of_range(fireplace_factory, bad):
     fp, _, _ = fireplace_factory()
     with pytest.raises(NapoleonValueError):
@@ -36,7 +36,7 @@ async def test_set_orange_flame_rejects_out_of_range(fireplace_factory, bad):
 
 
 @pytest.mark.set_params
-@pytest.mark.parametrize("bad", [-1, 6])
+@pytest.mark.parametrize("bad", [-1, 5, 6, 99])
 async def test_set_yellow_flame_rejects_out_of_range(fireplace_factory, bad):
     fp, _, _ = fireplace_factory()
     with pytest.raises(NapoleonValueError):
@@ -86,7 +86,7 @@ async def test_set_setpoint_writes_celsius_minus_offset(fireplace_factory):
 @pytest.mark.set_params
 @pytest.mark.parametrize(
     ("user_value", "wire_value"),
-    [(0, 5), (1, 4), (2, 3), (3, 2), (4, 1), (5, 0)],
+    [(0, 5), (1, 4), (2, 3), (3, 2), (4, 1)],
 )
 async def test_set_orange_flame_inverts_wire_value(
     fireplace_factory, user_value, wire_value
@@ -110,7 +110,7 @@ async def test_set_orange_flame_inverts_wire_value(
 @pytest.mark.set_params
 @pytest.mark.parametrize(
     ("user_value", "wire_value"),
-    [(0, 5), (1, 4), (2, 3), (3, 2), (4, 1), (5, 0)],
+    [(0, 5), (1, 4), (2, 3), (3, 2), (4, 1)],
 )
 async def test_set_yellow_flame_inverts_wire_value(
     fireplace_factory, user_value, wire_value

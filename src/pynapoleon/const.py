@@ -122,7 +122,7 @@ TEMP_MAX_C = 30
 # Capability ranges (inclusive on both ends)
 # ---------------------------------------------------------------------------
 FLAME_SPEED_RANGE = (1, 5)
-FLAME_COLOUR_RANGE = (0, 5)  # orange_flame, yellow_flame
+FLAME_COLOUR_RANGE = (0, 4)  # orange_flame, yellow_flame (0 = off, 1..4 = levels)
 EMBER_BED_BRIGHTNESS_RANGE = (0, 4)
 RGB_CHANNEL_RANGE = (0, 255)
 
