@@ -178,7 +178,7 @@ async def _cmd_login(_args: argparse.Namespace) -> int:
     client = _build_client_from_env()
     try:
         await client.login()
-        print(f"OK {client._email}")  # noqa: SLF001  (CLI diagnostic only)
+        print(f"OK {client._email}")
         return 0
     finally:
         await client.close()

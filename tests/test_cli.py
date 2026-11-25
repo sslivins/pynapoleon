@@ -17,7 +17,6 @@ from pynapoleon import __main__ as cli
 from pynapoleon.errors import NapoleonAuthError, NapoleonError, NapoleonValueError
 from pynapoleon.models import FireplaceState
 
-
 pytestmark = pytest.mark.unit
 
 

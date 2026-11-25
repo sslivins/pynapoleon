@@ -17,7 +17,6 @@ import pytest
 
 from pynapoleon.client import NapoleonClient
 
-
 pytestmark = pytest.mark.live
 
 
