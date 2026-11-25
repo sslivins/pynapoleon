@@ -26,6 +26,9 @@ class FireplaceState:
     top_light_rgb: tuple[int, int, int] | None = None
     top_light_cycling: bool | None = None
     current_favourite: str | None = None
+    # Cloud connection status; the other fields are the cloud's last-known
+    # values and go stale while this is False. None = unknown.
+    online: bool | None = None
 
 
 @dataclass

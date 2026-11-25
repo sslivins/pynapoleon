@@ -73,9 +73,11 @@ async def test_login_translates_auth_error():
     client = NapoleonClient("e", "p")
     fake_ayla = AsyncMock()
     fake_ayla.async_sign_in = AsyncMock(side_effect=AylaAuthError("bad creds"))
-    with patch("pynapoleon.client.AylaApi", return_value=fake_ayla):
-        with pytest.raises(NapoleonAuthError):
-            await client.login()
+    with (
+        patch("pynapoleon.client.AylaApi", return_value=fake_ayla),
+        pytest.raises(NapoleonAuthError),
+    ):
+        await client.login()
 
 
 @pytest.mark.auth
@@ -85,9 +87,11 @@ async def test_login_translates_connection_error():
     fake_ayla.async_sign_in = AsyncMock(
         side_effect=aiohttp.ClientConnectionError("dns")
     )
-    with patch("pynapoleon.client.AylaApi", return_value=fake_ayla):
-        with pytest.raises(NapoleonConnectionError):
-            await client.login()
+    with (
+        patch("pynapoleon.client.AylaApi", return_value=fake_ayla),
+        pytest.raises(NapoleonConnectionError),
+    ):
+        await client.login()
 
 
 @pytest.mark.auth

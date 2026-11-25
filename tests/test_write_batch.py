@@ -85,7 +85,7 @@ async def test_set_power_combines_into_single_batch(fireplace_factory):
     await fp.set_ember_bed_rgb((10, 20, 30))
     # Single HTTP call for all three RGB channels.
     assert client.ayla_request.await_count == 1
-    args, kwargs = client.ayla_request.call_args
+    _args, kwargs = client.ayla_request.call_args
     names = [dp["name"] for dp in kwargs["json"]["batch_datapoints"]]
     assert sorted(names) == ["ember_bed_blue", "ember_bed_green", "ember_bed_red"]
 

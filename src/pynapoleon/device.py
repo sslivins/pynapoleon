@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
@@ -129,14 +130,11 @@ class Fireplace:
 
     @property
     def is_online(self) -> bool | None:
-        """Whether the device is currently reachable from the cloud.
+        """Whether the device is connected to the cloud, as of the last refresh.
 
-        ayla-iot-unofficial 1.5 does not surface a connection-status field on
-        :class:`Device`, so we always return ``None`` for now. HA callers
-        should treat ``None`` as "unknown" and avoid setting availability
-        based on this value.
+        ``None`` means unknown (not refreshed yet, or the status read failed).
         """
-        return None
+        return self._state.online
 
     # -- state access ------------------------------------------------------
     @property
@@ -154,6 +152,7 @@ class Fireplace:
             AylaAuthExpiringError,
             AylaNotAuthedError,
         )
+
         from .errors import NapoleonAuthError
 
         ayla = self._client.ayla_api
@@ -170,7 +169,14 @@ class Fireplace:
                 f"refreshing device {self.dsn} failed: {exc}"
             ) from exc
 
-        self._state = self._build_state()
+        try:
+            online = await self._fetch_online()
+        except aiohttp.ClientError:
+            online = None
+
+        state = self._build_state()
+        state.online = online
+        self._state = state
         return self._state
 
     def _build_state(self) -> FireplaceState:
@@ -248,17 +254,39 @@ class Fireplace:
             ) from exc
 
     @property
-    def _batch_url(self) -> str:
+    def _ads_base(self) -> str:
         dev = self._ayla_device
         # ayla-iot-unofficial>=1.5.0 exposes ``ads_url`` / ``eu_ads_url`` as
         # module-level constants on the device; older versions used class
         # attributes. Either way, the regional ADS host is the right base.
-        base = (
-            dev.eu_ads_url
-            if getattr(dev, "europe", False)
-            else dev.ads_url
+        return dev.eu_ads_url if getattr(dev, "europe", False) else dev.ads_url
+
+    @property
+    def _batch_url(self) -> str:
+        return f"{self._ads_base}/apiv1/batch_datapoints.json"
+
+    async def _fetch_online(self) -> bool | None:
+        """Read the device's cloud ``connection_status`` (Online/Offline).
+
+        Property values are cached by the cloud, so they keep reading fine
+        while the fireplace is off Wi-Fi; only this field reveals that. An
+        unexpected or failed response yields ``None`` (unknown).
+        """
+        resp = await self._client.ayla_request(
+            "get", f"{self._ads_base}/apiv1/dsns/{self.dsn}.json"
         )
-        return f"{base}/apiv1/batch_datapoints.json"
+        try:
+            body = await resp.text()
+            status = resp.status
+        finally:
+            resp.release()
+        if status >= 400:
+            return None
+        try:
+            value = json.loads(body)["device"]["connection_status"]
+        except (ValueError, KeyError, TypeError):
+            return None
+        return {"online": True, "offline": False}.get(str(value).lower())
 
     async def _write_batch(self, values: dict[str, Any]) -> None:
         """Submit a single ``apiv1/batch_datapoints.json`` request.

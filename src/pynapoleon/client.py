@@ -6,7 +6,8 @@ Wraps an :mod:`ayla-iot-unofficial` session with Napoleon-specific defaults
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+import contextlib
+from typing import TYPE_CHECKING, Any, Self
 
 import aiohttp
 from aiohttp.client import _BaseRequestContextManager
@@ -51,7 +52,7 @@ class NapoleonClient:
         # close it). When the caller injects a session we never close it.
         self._owns_session = False
 
-    async def __aenter__(self) -> NapoleonClient:
+    async def __aenter__(self) -> Self:
         await self.login()
         return self
 
@@ -187,11 +188,9 @@ class NapoleonClient:
         self._ayla = None
         if ayla is None:
             return
-        try:
+        # Best-effort sign-out; never let cleanup mask a real error.
+        with contextlib.suppress(Exception):
             await ayla.async_sign_out()
-        except Exception:
-            # Best-effort sign-out; never let cleanup mask a real error.
-            pass
         if self._owns_session:
             session = getattr(ayla, "websession", None)
             if session is not None and not session.closed:

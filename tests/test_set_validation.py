@@ -70,7 +70,7 @@ async def test_set_setpoint_rejects_out_of_range(fireplace_factory, bad_c):
 async def test_set_setpoint_writes_celsius_minus_offset(fireplace_factory):
     fp, client, _ = fireplace_factory()
     await fp.set_setpoint_c(23)
-    args, kwargs = client.ayla_request.call_args
+    _args, kwargs = client.ayla_request.call_args
     payload = kwargs["json"]
     assert payload == {
         "batch_datapoints": [
@@ -94,7 +94,7 @@ async def test_set_orange_flame_inverts_wire_value(
     """User passes the natural scale; pynapoleon writes the inverted wire value."""
     fp, client, _ = fireplace_factory()
     await fp.set_orange_flame(user_value)
-    args, kwargs = client.ayla_request.call_args
+    _args, kwargs = client.ayla_request.call_args
     payload = kwargs["json"]
     assert payload == {
         "batch_datapoints": [
@@ -117,7 +117,7 @@ async def test_set_yellow_flame_inverts_wire_value(
 ):
     fp, client, _ = fireplace_factory()
     await fp.set_yellow_flame(user_value)
-    args, kwargs = client.ayla_request.call_args
+    _args, kwargs = client.ayla_request.call_args
     payload = kwargs["json"]
     assert payload == {
         "batch_datapoints": [
@@ -166,7 +166,7 @@ async def test_apply_favourite_rejects_unknown(fireplace_factory):
 async def test_apply_favourite_writes_name_and_active(fireplace_factory, slot):
     fp, client, _ = fireplace_factory()
     await fp.apply_favourite(slot)
-    args, kwargs = client.ayla_request.call_args
+    _args, kwargs = client.ayla_request.call_args
     payload = kwargs["json"]
     names = {dp["name"]: dp["datapoint"]["value"] for dp in payload["batch_datapoints"]}
     assert names == {

@@ -85,6 +85,61 @@ def test_info_pulls_metadata_from_ayla_device(fireplace_factory):
 
 
 @pytest.mark.get_params
-def test_is_online_returns_none_until_supported(fireplace_factory):
+def test_is_online_is_none_before_first_refresh(fireplace_factory):
     fp, _, _ = fireplace_factory()
     assert fp.is_online is None
+
+
+@pytest.mark.get_params
+@pytest.mark.parametrize(
+    ("status", "body", "expected"),
+    [
+        (200, '{"device": {"connection_status": "Online"}}', True),
+        (200, '{"device": {"connection_status": "Offline"}}', False),
+        (200, '{"device": {"connection_status": "Initializing"}}', None),
+        (200, '{"device": {}}', None),
+        (200, "not json", None),
+        (404, '{"error": "not found"}', None),
+        (500, "", None),
+    ],
+)
+async def test_refresh_reads_cloud_connection_status(
+    fireplace_factory, fake_response, setpoint_property_values, status, body, expected
+):
+    fp, client, _ = fireplace_factory(
+        property_values=setpoint_property_values,
+        response=fake_response(status=status, body=body),
+    )
+    state = await fp.refresh()
+    assert state.online is expected
+    assert fp.is_online is expected
+    # Property decoding is unaffected by the status read.
+    assert state.power is True
+    method, url = client.ayla_request.call_args.args
+    assert method == "get"
+    assert url == "https://ads-field.aylanetworks.com/apiv1/dsns/AC000W032261383.json"
+
+
+@pytest.mark.get_params
+async def test_refresh_status_network_error_is_unknown_not_fatal(fireplace_factory):
+    import aiohttp
+
+    fp, client, _ = fireplace_factory(property_values={"power_on_off": 1})
+    client.ayla_request.side_effect = aiohttp.ClientError("boom")
+    state = await fp.refresh()
+    assert state.online is None
+    assert state.power is True
+
+
+@pytest.mark.get_params
+async def test_offline_after_online_is_reported(fireplace_factory, fake_response):
+    fp, client, _ = fireplace_factory(
+        response=fake_response(body='{"device": {"connection_status": "Online"}}')
+    )
+    await fp.refresh()
+    assert fp.is_online is True
+    client.ayla_request.return_value = fake_response(
+        body='{"device": {"connection_status": "Offline"}}'
+    )
+    await fp.refresh()
+    assert fp.is_online is False

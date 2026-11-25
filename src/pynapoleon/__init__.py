@@ -15,18 +15,18 @@ from .models import DaySchedule, FireplaceInfo, FireplaceState
 __version__ = "0.0.2"
 
 __all__ = [
-    "NapoleonClient",
+    "DaySchedule",
     "Fireplace",
     "FireplaceInfo",
     "FireplaceState",
-    "DaySchedule",
-    "encode_setpoint_c",
-    "decode_setpoint_c",
-    "NapoleonError",
-    "NapoleonAuthError",
     "NapoleonApiError",
+    "NapoleonAuthError",
+    "NapoleonClient",
     "NapoleonConnectionError",
+    "NapoleonError",
     "NapoleonNotFoundError",
     "NapoleonValueError",
     "__version__",
+    "decode_setpoint_c",
+    "encode_setpoint_c",
 ]
